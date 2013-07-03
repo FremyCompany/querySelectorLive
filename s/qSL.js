@@ -10,7 +10,6 @@
 
 // global todos:
 // - wrap this into a module
-// - disosciate the script from the html
 // - look for a few optimizations ideas in gecko/webkit
 
 ///
