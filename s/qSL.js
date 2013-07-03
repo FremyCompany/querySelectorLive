@@ -48,7 +48,7 @@ function myEventStream(connect, disconnect, reconnect) {
 		if(isDisconnected) { throw new Error("Cannot schedule on a disconnected event stream"); }
 		
 		// do not allow to schedule on already scheduled event streams
-		if(!shouldDisconnect) { throw new Error("Cannot schedule on an already-scheduled event stream"); }
+		if(isConnected && !shouldDisconnect) { throw new Error("Cannot schedule on an already-scheduled event stream"); }
 		
 		// schedule the new callback
 		callback=newCallback; shouldDisconnect=false;
