@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////
-////          implementation of qSL           ////
+////         prerequirements of qSL           ////
 //////////////////////////////////////////////////
 ////                                          ////
 //// note we require querySelectorAll to work ////
@@ -14,6 +14,7 @@
 
 ///
 /// event stream implementation
+/// please note this is required to 'live update' the qSA requests
 ///
 function myEventStream(connect, disconnect, reconnect) {
 	var self=this;
@@ -211,6 +212,7 @@ if("MutationObserver" in window) {
 
 ///
 /// composite event stream
+/// because sometimes you need more than one event source
 ///
 function myCompositeEventStream(stream1, stream2) {
 	var self=this;
@@ -244,6 +246,11 @@ function myCompositeEventStream(stream1, stream2) {
 		}
 	);
 }
+
+
+//////////////////////////////////////////////////
+////          implementation of qSL           ////
+//////////////////////////////////////////////////
 
 ///
 /// the live querySelectorAll implementation
@@ -307,10 +314,10 @@ window.myQuerySelectorLive = function(selector, handler) {
 			);
 		} else if((simpleSelector=simpleSelector.replace(/:(dir|lang|any-link|link|visited|local-link|target|active|focus|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi,'')).indexOf(':') == -1) {
 			// slow dynamic stuff only
-			eventStream = new myTimeoutFrameEventStream(250);
+			eventStream = new myTimeoutEventStream(250);
 		} else if(simpleSelector.replace(/:hover\b/gi,'').indexOf(':') == -1) {
 			// both mouse and slow dynamic stuff
-			eventStream = new myTimeoutFrameEventStream(64);
+			eventStream = new myTimeoutEventStream(64);
 		} else {
 			// other stuff, too
 			eventStream = new myAnimationFrameEventStream();
@@ -322,31 +329,6 @@ window.myQuerySelectorLive = function(selector, handler) {
 	
 }
 
-
-//////////////////////////////////////////////////
-////              tests of qSL                ////
-//////////////////////////////////////////////////
-myQuerySelectorLive("h2~p", {
-	onadded: function(e) {
-		console.log("h2~p added:");
-		console.log(e.textContent);
-	},
-	onremoved: function(e) {
-		console.log("h2~p removed:");
-		console.log(e.textContent);
-	}
-});
-
-myQuerySelectorLive("ul.active,li:hover",{
-	onadded: function(e) {
-		console.log("ul/li added:");
-		console.log(e.textContent);
-	},
-	onremoved: function(e) {
-		console.log("ul/li removed:");
-		console.log(e.textContent);
-	}
-});
 
 //////////////////////////////////////////////////
 //// here's some other stuff I may user later ////

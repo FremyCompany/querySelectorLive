@@ -3,11 +3,51 @@
 	<head>
 		<title>querySelectorLive demo</title>
 		<script src="./s/qSL.js"></script>
+		<script>
+			
+			//////////////////////////////////////////////////
+			////              tests of qSL                ////
+			//////////////////////////////////////////////////
+			
+			myQuerySelectorLive("h2~p", {
+				onadded: function(e) {
+					console.log("h2~p added:");
+					console.log(e.textContent);
+				},
+				onremoved: function(e) {
+					console.log("h2~p removed:");
+					console.log(e.textContent);
+				}
+			});
+			
+			myQuerySelectorLive("ul.active,li:hover",{
+				onadded: function(e) {
+					console.log("ul/li added:");
+					console.log(e.textContent);
+				},
+				onremoved: function(e) {
+					console.log("ul/li removed:");
+					console.log(e.textContent);
+				}
+			});
+			
+			myQuerySelectorLive(":active",{
+				onadded: function(e) {
+					console.log("active added:");
+					console.log(e.textContent);
+				},
+				onremoved: function(e) {
+					console.log("active removed:");
+					console.log(e.textContent);
+				}
+			});
+			
+		</script>
 	</head>
 	<body>
 		
 		<ul onclick="this.className=this.className?'':'active'">
-			<li>First line</li>
+			<li><a href="#">First line</a></li>
 			<li>Second line</li>
 		</ul>
 		
