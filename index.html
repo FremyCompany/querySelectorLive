@@ -12,33 +12,44 @@
 			myQuerySelectorLive("h2~p", {
 				onadded: function(e) {
 					console.log("h2~p added:");
-					console.log(e.textContent);
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
 				},
 				onremoved: function(e) {
 					console.log("h2~p removed:");
-					console.log(e.textContent);
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
 				}
 			});
 			
 			myQuerySelectorLive("ul.active,li:hover",{
 				onadded: function(e) {
 					console.log("ul/li added:");
-					console.log(e.textContent);
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
 				},
 				onremoved: function(e) {
 					console.log("ul/li removed:");
-					console.log(e.textContent);
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
 				}
 			});
 			
 			myQuerySelectorLive(":active",{
 				onadded: function(e) {
 					console.log("active added:");
-					console.log(e.textContent);
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
 				},
 				onremoved: function(e) {
 					console.log("active removed:");
-					console.log(e.textContent);
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
+				}
+			});
+			
+			myQuerySelectorLive(":focus",{
+				onadded: function(e) {
+					console.log("focus added:");
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
+				},
+				onremoved: function(e) {
+					console.log("focus removed:");
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
 				}
 			});
 			
@@ -48,7 +59,7 @@
 		
 		<ul onclick="this.className=this.className?'':'active'">
 			<li><a href="#">First line</a></li>
-			<li>Second line</li>
+			<li><a href="#">Second line</a></li>
 		</ul>
 		
 		<article class="active" onclick="var p; this.appendChild(p=document.createElement('p')); p.textContent=Math.random()" oncontextmenu="this.removeChild(this.lastChild); return false;">

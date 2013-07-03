@@ -14,6 +14,7 @@
 // global todos:
 // - wrap this into a module
 // - look for a few optimizations ideas in gecko/webkit
+// - use arrays in myCompositeEventStream to avoid nested debouncings
 
 ///
 /// event stream implementation
@@ -116,7 +117,7 @@ function myTimeoutEventStream(options) {
 ///
 /// call a function every time the mouse moves
 ///
-function myMouseEventStream(options) {
+function myMouseEventStream() {
 	var self=this; var pointermove = (("PointerEvent" in window) ? "pointermove" : (("MSPointerEvent" in window) ? "MSPointerMove" : "mousemove"));
 
 	// flag that says whether the event is still observered or not
@@ -126,7 +127,6 @@ function myMouseEventStream(options) {
 	var yieldEvent=null;
 	var yieldEventDelayed = function() {
 		if(scheduled) return;
-		document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
 		window.removeEventListener(pointermove, yieldEventDelayed, true);
 		scheduled = requestAnimationFrame(yieldEvent);
 	}
@@ -136,17 +136,57 @@ function myMouseEventStream(options) {
 		this, 
 		function connect(newYieldEvent) {
 			yieldEvent=newYieldEvent;
-			document.addEventListener("DOMContentLoaded", yieldEventDelayed, false);
 			window.addEventListener(pointermove, yieldEventDelayed, true);
 		},
 		function disconnect() { 
-			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
 			window.removeEventListener(pointermove, yieldEventDelayed, true);
 			cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
 		},
 		function reconnect(newYieldEvent) { 
 			yieldEvent=newYieldEvent; scheduled=false;
 			window.addEventListener(pointermove, yieldEventDelayed, true);
+		}
+	);
+	
+}
+
+///
+/// call a function every time the mouse is clicked/unclicked
+///
+function myMouseButtonEventStream() {
+	var self=this; 
+	var pointerup = (("PointerEvent" in window) ? "pointerup" : (("MSPointerEvent" in window) ? "MSPointerUp" : "mouseup"));
+	var pointerdown = (("PointerEvent" in window) ? "pointerdown" : (("MSPointerEvent" in window) ? "MSPointerDown" : "mousedown"));
+
+	// flag that says whether the event is still observered or not
+	var scheduled = false; var interval=0;
+	
+	// handle the synchronous nature of mutation events
+	var yieldEvent=null;
+	var yieldEventDelayed = function() {
+		if(scheduled) return;
+		window.removeEventListener(pointerup, yieldEventDelayed, true);
+		window.removeEventListener(pointerdown, yieldEventDelayed, true);
+		scheduled = requestAnimationFrame(yieldEvent);
+	}
+	
+	// start the event stream
+	myEventStream.call(
+		this, 
+		function connect(newYieldEvent) {
+			yieldEvent=newYieldEvent;
+			window.addEventListener(pointerup, yieldEventDelayed, true);
+			window.addEventListener(pointerdown, yieldEventDelayed, true);
+		},
+		function disconnect() { 
+			window.removeEventListener(pointerup, yieldEventDelayed, true);
+			window.removeEventListener(pointerdown, yieldEventDelayed, true);
+			cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
+		},
+		function reconnect(newYieldEvent) { 
+			yieldEvent=newYieldEvent; scheduled=false;
+			window.addEventListener(pointerup, yieldEventDelayed, true);
+			window.addEventListener(pointerdown, yieldEventDelayed, true);
 		}
 	);
 	
@@ -227,6 +267,53 @@ if("MutationObserver" in window) {
 } else {
 	myDOMUpdateEventStream = myAnimationFrameEventStream;
 }
+
+///
+/// call a function every time the mouse moves
+///
+function myFocusEventStream() {
+	var self=this;
+	
+	// handle the filtering nature of focus events
+	var yieldEvent=null; var previousActiveElement=null; var previousHasFocus=false; var rid=0;
+	var yieldEventDelayed = function() {
+		
+		// if the focus didn't change
+		if(previousActiveElement==document.activeElement && previousHasFocus==document.hasFocus()) {
+			
+			// then do not generate an event
+			setTimeout(yieldEventDelayed, 333); // focus that didn't move is expected to stay
+			
+		} else {
+			
+			// else, generate one & save config
+			previousActiveElement=document.activeElement;
+			previousHasFocus=document.hasFocus();
+			yieldEvent();
+			
+		}
+	}
+	
+	// start the event stream
+	myEventStream.call(
+		this, 
+		function connect(newYieldEvent) {
+			yieldEvent=newYieldEvent;
+			rid=setTimeout(yieldEventDelayed, 500); // let the document load
+		},
+		function disconnect() { 
+			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
+			window.removeEventListener(pointermove, yieldEventDelayed, true);
+			clearTimeout(rid); yieldEventDelayed=null; yieldEvent=null; rid=0;
+		},
+		function reconnect(newYieldEvent) { 
+			yieldEvent=newYieldEvent;
+			rid=setTimeout(yieldEventDelayed, 100); // focus by tab navigation moves fast
+		}
+	);
+	
+}
+
 
 ///
 /// composite event stream
@@ -331,34 +418,75 @@ window.myQuerySelectorLive = function(selector, handler) {
 		
 		// dynamic stuff too
 		eventStream = new myDOMUpdateEventStream(); 
+		if(myDOMUpdateEventStream != myAnimationFrameEventStream) {
 		
-		// detect the presence of mouse-related pseudo-classes
-		if((simpleSelector=simpleSelector.replace(/:hover\b/gi,'')).indexOf(':') == -1) {
+			// detect the presence of focus-related pseudo-classes
+			var reg = /:(focus|active)\b/gi;
+			if(reg.test(simpleSelector)) {
+				
+				// mouse events should be listened
+				eventStream = new myCompositeEventStream(
+					new myFocusEventStream(),
+					eventStream
+				);
+				
+				// simplify simpleSelector
+				simpleSelector = simpleSelector.replace(/:(focus)\b/gi, ''); // :active has other hooks
+				
+			}
 			
-			// mouse events should be listened
-			eventStream = new myCompositeEventStream(
-				new myMouseEventStream(),
-				eventStream
-			);
+			// detect the presence of mouse-button-related pseudo-classes
+			var reg = /:(active)\b/gi;
+			if(reg.test(simpleSelector)) {
+				
+				// mouse events should be listened
+				eventStream = new myCompositeEventStream(
+					new myMouseButtonEventStream(),
+					eventStream
+				);
+				
+				// simplify simpleSelector
+				simpleSelector = simpleSelector.replace(reg, '');
+				
+			}
 			
-		}
-		
-		// detect the presence of user input pseudo-classes
-		if((simpleSelector=simpleSelector.replace(/:(any-link|link|visited|local-link|target|active|focus|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi,'')).indexOf(':') == -1) {
+			// detect the presence of user input pseudo-classes
+			var reg = /:(any-link|link|visited|local-link|target|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi;
+			if(reg.test(simpleSelector)) {
+				
+				// slowly dynamic stuff do happen
+				eventStream = new myCompositeEventStream(
+					new myTimeoutEventStream(250),
+					eventStream
+				);
+				
+				// simplify simpleSelector
+				simpleSelector = simpleSelector.replace(reg, '');
+				
+			}
 			
-			// slowly dynamic stuff do happen
-			eventStream = new myCompositeEventStream(
-				new myTimeoutEventStream(250),
-				eventStream
-			);
+			// detect the presence of mouse-related pseudo-classes
+			var reg = /:(hover)\b/gi;
+			if(reg.test(simpleSelector)) {
+				
+				// mouse events should be listened
+				eventStream = new myCompositeEventStream(
+					new myMouseEventStream(),
+					eventStream
+				);
+				
+				// simplify simpleSelector
+				simpleSelector = simpleSelector.replace(reg, '');
+				
+			}
 			
-		}
-		
-		// detect the presence of unknown pseudo-classes
-		if(simpleSelector.indexOf(':') !== -1) {
-			
-			// other stuff do happen, too (let's give up on events)
-			eventStream = new myAnimationFrameEventStream(); 
+			// detect the presence of unknown pseudo-classes
+			if(simpleSelector.indexOf(':') !== -1) {
+				
+				// other stuff do happen, too (let's give up on events)
+				eventStream = new myAnimationFrameEventStream(); 
+				
+			}
 			
 		}
 		
