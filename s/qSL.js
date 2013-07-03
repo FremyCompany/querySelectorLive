@@ -310,7 +310,7 @@ window.myQuerySelectorLive = function(selector, handler) {
 				
 			} else {
 			
-				// DELETE: raise onadded, pop new elements
+				// DELETE: raise onremoved, pop old elements
 				try { handler.onremoved && handler.onremoved(el1); } catch(ex) {}
 				el1 = oldElms.pop();
 				
