@@ -269,20 +269,21 @@ window.myQuerySelectorLive = function(selector, handler) {
 		var newElms = [];
 		var oldElms = currentElms.slice(0);
 		var temps = document.querySelectorAll(selector);
-		for(var i=temps.length; i;) { newElms.push(temps[--i]); }
+		for(var i=newElms.length=temps.length; i;) { newElms.push(temps[--i]); }
 		currentElms = newElms.slice(0); temps=null;
 		
-		// now pop() until both are exhausted
+		// now pop and match until both lists are exhausted
+		// (we use the fact the returned elements are in document order)
 		var el1 = oldElms.pop();
 		var el2 = newElms.pop();
 		while(el1 || el2) {
-			if(el1==el2) {
+			if(el1===el2) {
 			
 				// MATCH: pop both elements
 				el1 = oldElms.pop();
 				el2 = newElms.pop();
 				
-			} else if (el2 && (!el1||(el2.compareDocumentPosition(el1) & (1|2|8|32))===0)) {
+			} else if (el2 && /*el1 is after el2*/(!el1||(el2.compareDocumentPosition(el1) & (1|2|8|32))===0)) {
 				
 				// INSERT: raise onadded, pop new elements
 				try { handler.onadded && handler.onadded(el2); } catch(ex) {}
@@ -291,7 +292,7 @@ window.myQuerySelectorLive = function(selector, handler) {
 			} else {
 			
 				// DELETE: raise onadded, pop new elements
-				try { handler.onadded && handler.onremoved(el1); } catch(ex) {}
+				try { handler.onremoved && handler.onremoved(el1); } catch(ex) {}
 				el1 = oldElms.pop();
 				
 			}
