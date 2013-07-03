@@ -300,27 +300,47 @@ window.myQuerySelectorLive = function(selector, handler) {
 	};
 	
 	// use the event stream that best matches our needs
-	var simpleSelector = selector.replace(/:(root|empty|blank|nth-child|nth-last-child|first-child|last-child|only-child|nth-of-type|nth-last-of-child|fist-of-type|last-of-type|only-of-type|not|matches|default)\b/gi,'')
+	var simpleSelector = selector.replace(/:(dir|lang|root|empty|blank|nth-child|nth-last-child|first-child|last-child|only-child|nth-of-type|nth-last-of-child|fist-of-type|last-of-type|only-of-type|not|matches|default)\b/gi,'')
 	var eventStream; if(simpleSelector.indexOf(':') == -1) {
+		
 		// static stuff only
 		eventStream = new myDOMUpdateEventStream(); 
+		
 	} else {
+		
 		// dynamic stuff too
 		if(simpleSelector.replace(/:hover\b/gi,'').indexOf(':') == -1) {
+			
 			// mouse events only
 			eventStream = new myCompositeEventStream(
 				new myDOMUpdateEventStream(),
 				new myMouseEventStream()
 			);
-		} else if((simpleSelector=simpleSelector.replace(/:(dir|lang|any-link|link|visited|local-link|target|active|focus|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi,'')).indexOf(':') == -1) {
-			// slow dynamic stuff only
-			eventStream = new myTimeoutEventStream(250);
+			
+		} else if((simpleSelector=simpleSelector.replace(/:(any-link|link|visited|local-link|target|active|focus|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi,'')).indexOf(':') == -1) {
+			
+			// slowly dynamic stuff only
+			eventStream = new myCompositeEventStream(
+				new myDOMUpdateEventStream(),
+				new myTimeoutEventStream(250)
+			);
+			
 		} else if(simpleSelector.replace(/:hover\b/gi,'').indexOf(':') == -1) {
-			// both mouse and slow dynamic stuff
-			eventStream = new myTimeoutEventStream(64);
+			
+			// both mouse and slowly dynamic stuff
+			eventStream = new myCompositeEventStream(
+				new myMouseEventStream(),
+				new myCompositeEventStream(
+					new myDOMUpdateEventStream(),
+					new myTimeoutEventStream(250)
+				)
+			);
+			
 		} else {
+			
 			// other stuff, too
 			eventStream = new myAnimationFrameEventStream();
+			
 		}
 	}
 	
