@@ -32,7 +32,7 @@ function myEventStream(connect, disconnect, reconnect) {
 	var callback=null;
 	var yieldEvent = function() {
 		
-		// call the function and pend disposal
+		// call the callback function, and pend disposal
 		shouldDisconnect=true;
 		try { callback && callback(self); } catch(ex) { setImmediate(function() { throw ex; }); }
 		
@@ -43,8 +43,17 @@ function myEventStream(connect, disconnect, reconnect) {
 	
 	// export the interface
 	var schedule = this.schedule = function(newCallback) {
-		if(isDisconnected) { return; }
+	
+		// do not allow to schedule on disconnected event streams
+		if(isDisconnected) { throw new Error("Cannot schedule on a disconnected event stream"); }
+		
+		// do not allow to schedule on already scheduled event streams
+		if(!shouldDisconnect) { throw new Error("Cannot schedule on an already-scheduled event stream"); }
+		
+		// schedule the new callback
 		callback=newCallback; shouldDisconnect=false;
+		
+		// reconnect to the stream
 		if(isConnected) {
 			reconnect(yieldEvent);
 		} else {
@@ -54,9 +63,15 @@ function myEventStream(connect, disconnect, reconnect) {
 	}
 	
 	var dispose = this.dispose = function() {
+	
+		// do not allow to dispose non-connected streams
 		if(isConnected) {
-			disconnect();
-			self=null; yieldEvent=null; callback=null; isConnected=false; isDisconnected=true; shouldDisconnect=false;
+		
+			// disconnect & save resources
+			disconnect(); 
+			self=null; yieldEvent=null; callback=null; 
+			isConnected=false; isDisconnected=true; shouldDisconnect=false;
+			
 		}
 	}
 }
@@ -68,6 +83,8 @@ function myAnimationFrameEventStream(options) {
 	
 	// flag that says whether the observer is still needed or not
 	var rid = 0;
+		
+	// start the event stream
 	myEventStream.call(
 		this, 
 		function connect(yieldEvent) { rid = requestAnimationFrame(yieldEvent); },
@@ -83,6 +100,8 @@ function myTimeoutEventStream(options) {
 	
 	// flag that says whether the observer is still needed or not
 	var rid = 0; var timeout=(typeof(options)=="number") ? (+options) : ("timeout" in options ? +options.timeout : 333);
+		
+	// start the event stream
 	myEventStream.call(
 		this, 
 		function connect(yieldEvent) { rid = setTimeout(yieldEvent, timeout); },
@@ -141,7 +160,7 @@ var myDOMUpdateEventStream;
 if("MutationObserver" in window) {
 	myDOMUpdateEventStream = function myDOMUpdateEventStream(options) {
 		 
-		// configuration of the observer:
+		// configuration of the observer
 		if(options) {
 			var target = "target" in options ? options.target : document.documentElement;
 			var config = { 
