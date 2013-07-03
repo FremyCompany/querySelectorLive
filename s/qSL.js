@@ -62,6 +62,21 @@ function myEventStream(connect, disconnect, reconnect) {
 }
 
 ///
+/// call a function every frame
+///
+function myAnimationFrameEventStream(options) {
+	
+	// flag that says whether the observer is still needed or not
+	var rid = 0;
+	myEventStream.call(
+		this, 
+		function connect(yieldEvent) { rid = requestAnimationFrame(yieldEvent); },
+		function disconnect() { cancelAnimationFrame(rid); }
+	);
+	
+}
+
+///
 /// call a function every timeout
 ///
 function myTimeoutEventStream(options) {
@@ -70,8 +85,8 @@ function myTimeoutEventStream(options) {
 	var rid = 0; var timeout=(typeof(options)=="number") ? (+options) : ("timeout" in options ? +options.timeout : 333);
 	myEventStream.call(
 		this, 
-		function(yieldEvent) { rid = setTimeout(yieldEvent, timeout); },
-		function() { clearTimeout(rid); }
+		function connect(yieldEvent) { rid = setTimeout(yieldEvent, timeout); },
+		function disconnect() { clearTimeout(rid); }
 	);
 	
 }
@@ -120,21 +135,6 @@ function myMouseEventStream(options) {
 	}
 
 ///
-/// call a function every frame
-///
-function myAnimationFrameEventStream(options) {
-	
-	// flag that says whether the observer is still needed or not
-	var rid = 0;
-	myEventStream.call(
-		this, 
-		function(yieldEvent) { rid = requestAnimationFrame(yieldEvent); },
-		function() { cancelAnimationFrame(rid); }
-	);
-	
-}
-
-///
 /// call a function whenever the DOM is modified
 ///
 var myDOMUpdateEventStream;
@@ -164,9 +164,9 @@ if("MutationObserver" in window) {
 		var observer = null;
 		myEventStream.call(
 			this, 
-			function(yieldEvent) { if(config) { observer=new MutationObserver(yieldEvent); observer.observe(target,config); target=null; config=null; } },
-			function() { observer && observer.disconnect(); observer=null; yieldEvent=null; yieldEventWrapper=null; },
-			function() { observer.takeRecords(); }
+			function connect(yieldEvent) { if(config) { observer=new MutationObserver(yieldEvent); observer.observe(target,config); target=null; config=null; } },
+			function disconnect() { observer && observer.disconnect(); observer=null; yieldEvent=null; yieldEventWrapper=null; },
+			function reconnect() { observer.takeRecords(); }
 		);
 
 	}
