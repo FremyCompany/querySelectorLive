@@ -1,12 +1,15 @@
-//////////////////////////////////////////////////
-////         prerequirements of qSL           ////
-//////////////////////////////////////////////////
-////                                          ////
-//// note we require querySelectorAll to work ////
-//// see github.com/termi/CSS_selector_engine ////
-//// for a polyfill for older browsers        ////
-////                                          ////
-//////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+////                                                         ////
+////                 prerequirements of qSL                  ////
+////                                                         ////
+/////////////////////////////////////////////////////////////////
+////                                                         ////
+////   Please note that I require querySelectorAll to work   ////
+////                                                         ////
+////   See http://github.com/termi/CSS_selector_engine/      ////
+////   for a polyfill for older browsers                     ////
+////                                                         ////
+/////////////////////////////////////////////////////////////////
 
 // global todos:
 // - wrap this into a module
@@ -114,44 +117,40 @@ function myTimeoutEventStream(options) {
 /// call a function every time the mouse moves
 ///
 function myMouseEventStream(options) {
-		var self=this;
+	var self=this; var pointermove = (("PointerEvent" in window) ? "pointermove" : (("MSPointerEvent" in window) ? "MSPointerMove" : "mousemove"));
 
-		// flag that says whether the event is still observered or not
-		var scheduled = false; var interval=0;
-		
-		// handle the synchronous nature of mutation events
-		var yieldEvent=null;
-		var yieldEventDelayed = function() {
-			if(scheduled) return;
-			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-			document.removeEventListener("mousemove", yieldEventDelayed, true);
-			document.removeEventListener("pointermove", yieldEventDelayed, true);
-			scheduled = requestAnimationFrame(yieldEvent);
-		}
-		
-		// start the event stream
-		myEventStream.call(
-			this, 
-			function connect(newYieldEvent) {
-				yieldEvent=newYieldEvent;
-				document.addEventListener("DOMContentLoaded", yieldEventDelayed, false);
-				document.addEventListener("mousemove", yieldEventDelayed, true);
-				document.addEventListener("pointermove", yieldEventDelayed, true);
-			},
-			function disconnect() { 
-				document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-				document.removeEventListener("mousemove", yieldEventDelayed, true);
-				document.removeEventListener("pointermove", yieldEventDelayed, true);
-				cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
-			},
-			function reconnect(newYieldEvent) { 
-				yieldEvent=newYieldEvent; scheduled=false;
-				document.addEventListener("mousemove", yieldEventDelayed, true);
-				document.addEventListener("pointermove", yieldEventDelayed, true);
-			}
-		);
-		
+	// flag that says whether the event is still observered or not
+	var scheduled = false; var interval=0;
+	
+	// handle the synchronous nature of mutation events
+	var yieldEvent=null;
+	var yieldEventDelayed = function() {
+		if(scheduled) return;
+		document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
+		window.removeEventListener(pointermove, yieldEventDelayed, true);
+		scheduled = requestAnimationFrame(yieldEvent);
 	}
+	
+	// start the event stream
+	myEventStream.call(
+		this, 
+		function connect(newYieldEvent) {
+			yieldEvent=newYieldEvent;
+			document.addEventListener("DOMContentLoaded", yieldEventDelayed, false);
+			window.addEventListener(pointermove, yieldEventDelayed, true);
+		},
+		function disconnect() { 
+			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
+			window.removeEventListener(pointermove, yieldEventDelayed, true);
+			cancelAnimationFrame(scheduled); yieldEventDelayed=null; yieldEvent=null; scheduled=false;
+		},
+		function reconnect(newYieldEvent) { 
+			yieldEvent=newYieldEvent; scheduled=false;
+			window.addEventListener(pointermove, yieldEventDelayed, true);
+		}
+	);
+	
+}
 
 ///
 /// call a function whenever the DOM is modified
@@ -267,9 +266,11 @@ function myCompositeEventStream(stream1, stream2) {
 }
 
 
-//////////////////////////////////////////////////
-////          implementation of qSL           ////
-//////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+////                                                         ////
+////                  implementation of qSL                  ////
+////                                                         ////
+/////////////////////////////////////////////////////////////////
 
 ///
 /// the live querySelectorAll implementation
@@ -370,9 +371,11 @@ window.myQuerySelectorLive = function(selector, handler) {
 }
 
 
-//////////////////////////////////////////////////
-//// here's some other stuff I may user later ////
-//////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////
+////                                                         ////
+////        here's some other stuff I may user later         ////
+////                                                         ////
+/////////////////////////////////////////////////////////////////
 
 ///
 /// get the common ancestor from a list of nodes
