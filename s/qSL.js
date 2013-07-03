@@ -330,39 +330,38 @@ window.myQuerySelectorLive = function(selector, handler) {
 	} else {
 		
 		// dynamic stuff too
-		if(simpleSelector.replace(/:hover\b/gi,'').indexOf(':') == -1) {
+		eventStream = new myDOMUpdateEventStream(); 
+		
+		// detect the presence of mouse-related pseudo-classes
+		if((simpleSelector=simpleSelector.replace(/:hover\b/gi,'')).indexOf(':') == -1) {
 			
-			// mouse events only
-			eventStream = new myCompositeEventStream(
-				new myDOMUpdateEventStream(),
-				new myMouseEventStream()
-			);
-			
-		} else if((simpleSelector=simpleSelector.replace(/:(any-link|link|visited|local-link|target|active|focus|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi,'')).indexOf(':') == -1) {
-			
-			// slowly dynamic stuff only
-			eventStream = new myCompositeEventStream(
-				new myDOMUpdateEventStream(),
-				new myTimeoutEventStream(250)
-			);
-			
-		} else if(simpleSelector.replace(/:hover\b/gi,'').indexOf(':') == -1) {
-			
-			// both mouse and slowly dynamic stuff
+			// mouse events should be listened
 			eventStream = new myCompositeEventStream(
 				new myMouseEventStream(),
-				new myCompositeEventStream(
-					new myDOMUpdateEventStream(),
-					new myTimeoutEventStream(250)
-				)
+				eventStream
 			);
 			
-		} else {
+		}
+		
+		// detect the presence of user input pseudo-classes
+		if((simpleSelector=simpleSelector.replace(/:(any-link|link|visited|local-link|target|active|focus|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi,'')).indexOf(':') == -1) {
 			
-			// other stuff, too
-			eventStream = new myAnimationFrameEventStream();
+			// slowly dynamic stuff do happen
+			eventStream = new myCompositeEventStream(
+				new myTimeoutEventStream(250),
+				eventStream
+			);
 			
 		}
+		
+		// detect the presence of unknown pseudo-classes
+		if(simpleSelector.indexOf(':') !== -1) {
+			
+			// other stuff do happen, too (let's give up on events)
+			eventStream = new myAnimationFrameEventStream(); 
+			
+		}
+		
 	}
 	
 	// start handling changes
