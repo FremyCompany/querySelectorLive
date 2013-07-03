@@ -1,9 +1,9 @@
 Polyfilling querySelectorLive
 =============================
 
-This project is an efficient live querySelectorAll (aka querySelectorLive) prollyfill. 
+This project is an efficient live querySelectorAll (aka querySelectorLive) prollyfill. I use different update schedules (mouse events, dom mutations, ...) depending on the selector to be sure not to waste the browser resources.
 
-I use different update schedules (mouse events, dom mutations, ...) depending on the selector to be sure not to waste the browser resources.
+	see /s/qSL.js for the implementation
 
 Usage is very simple:
 
