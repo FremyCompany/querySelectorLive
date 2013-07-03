@@ -77,7 +77,7 @@ function myTimeoutEventStream(options) {
 }
 
 ///
-/// call a function every time the mouse move
+/// call a function every time the mouse moves
 ///
 function myMouseEventStream(options) {
 		var self=this;
@@ -135,7 +135,7 @@ function myAnimationFrameEventStream(options) {
 }
 
 ///
-/// call a function when the DOM is modified
+/// call a function whenever the DOM is modified
 ///
 var myDOMUpdateEventStream;
 if("MutationObserver" in window) {
@@ -220,9 +220,9 @@ function myCompositeEventStream(stream1, stream2) {
 	// fields
 	var yieldEvent=null; var s1=false, s2=false;
 	var yieldEventWrapper=function(s) { 
-		if(s1||s2) return;
 		if(s==stream1) s1=true;
 		if(s==stream2) s2=true;
+		if(s1&&s2) return;
 		yieldEvent(self);
 	}
 	
@@ -257,7 +257,7 @@ function myCompositeEventStream(stream1, stream2) {
 ///
 window.myQuerySelectorLive = function(selector, handler) {
 	
-	// TODO: make use of "mutatedAncestorElement" to update only elements inside the mutations
+	// TODO: make use of "mutatedAncestorElement" to update only elements inside the mutated zone
 	
 	var currentElms = [];
 	var loop = function loop(eventStream) {
