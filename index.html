@@ -7,15 +7,18 @@
 			//////////////////////////////////////////////////
 			////          implementation of qSL           ////
 			//////////////////////////////////////////////////
+			////                                          ////
 			//// note we require querySelectorAll to work ////
 			//// see github.com/termi/CSS_selector_engine ////
+			//// for a polyfill for older browsers        ////
+			////                                          ////
 			//////////////////////////////////////////////////
-			
+
 			// global todos:
 			// - wrap this into a module
 			// - disosciate the script from the html
 			// - look for a few optimizations ideas in gecko/webkit
-			
+
 			///
 			/// event stream implementation
 			///
@@ -63,7 +66,7 @@
 					}
 				}
 			}
-		
+
 			///
 			/// call a function every timeout
 			///
@@ -78,7 +81,7 @@
 				);
 				
 			}
-			
+
 			///
 			/// call a function every time the mouse move
 			///
@@ -86,7 +89,7 @@
 					var self=this;
 
 					// flag that says whether the event is still observered or not
-					var scheduled = false;
+					var scheduled = false; var interval=0;
 					
 					// handle the synchronous nature of mutation events
 					var yieldEvent=null;
@@ -121,7 +124,7 @@
 					);
 					
 				}
-			
+
 			///
 			/// call a function every frame
 			///
@@ -136,7 +139,7 @@
 				);
 				
 			}
-			
+
 			///
 			/// call a function when the DOM is modified
 			///
@@ -212,7 +215,43 @@
 			} else {
 				myDOMUpdateEventStream = myAnimationFrameEventStream;
 			}
-		
+
+			///
+			/// composite event stream
+			///
+			function myCompositeEventStream(stream1, stream2) {
+				var self=this;
+				
+				// fields
+				var yieldEvent=null; var s1=false, s2=false;
+				var yieldEventWrapper=function(s) { 
+					if(s1||s2) return;
+					if(s==stream1) s1=true;
+					if(s==stream2) s2=true;
+					yieldEvent(self);
+				}
+				
+				// start the event stream
+				myEventStream.call(
+					this, 
+					function connect(newYieldEvent) {
+						yieldEvent=newYieldEvent;
+						stream1.connect(yieldEventWrapper);
+						stream1.connect(yieldEventWrapper);
+					},
+					function disconnect() { 
+						stream1.dispose();
+						stream2.dispose();
+					},
+					function reconnect(newYieldEvent) { 
+						yieldEvent=newYieldEvent; scheduled=false;
+						s1 && stream1.schedule(yieldEventWrapper);
+						s2 && stream2.schedule(yieldEventWrapper);
+						s1 = s2 = false;
+					}
+				);
+			}
+
 			///
 			/// the live querySelectorAll implementation
 			///
@@ -269,7 +308,10 @@
 					// dynamic stuff too
 					if(simpleSelector.replace(/:hover\b/gi,'').indexOf(':') == -1) {
 						// mouse events only
-						eventStream = new myMouseEventStream();
+						eventStream = new myCompositeEventStream(
+							new myDOMUpdateEventStream(),
+							new myMouseEventStream()
+						);
 					} else if((simpleSelector=simpleSelector.replace(/:(dir|lang|any-link|link|visited|local-link|target|active|focus|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi,'')).indexOf(':') == -1) {
 						// slow dynamic stuff only
 						eventStream = new myTimeoutFrameEventStream(250);
@@ -286,8 +328,8 @@
 				loop(eventStream);
 				
 			}
-			
-			
+
+
 			//////////////////////////////////////////////////
 			////              tests of qSL                ////
 			//////////////////////////////////////////////////
@@ -301,7 +343,7 @@
 					console.log(e.textContent);
 				}
 			});
-			
+
 			myQuerySelectorLive("ul.active,li:hover",{
 				onadded: function(e) {
 					console.log("ul/li added:");
@@ -312,16 +354,16 @@
 					console.log(e.textContent);
 				}
 			});
-			
+
 			//////////////////////////////////////////////////
 			//// here's some other stuff I may user later ////
 			//////////////////////////////////////////////////
-			
+
 			///
 			/// get the common ancestor from a list of nodes
 			///
 			function getCommonAncestor(nodes) {
-			
+
 				// validate arguments
 				if (!nodes || !nodes.length) { return null; }
 				if (nodes.length < 2) { return nodes[0]; }
@@ -354,6 +396,8 @@
 
 				return null;
 			}
+
+
 			
 		</script>
 	</head>
