@@ -269,7 +269,7 @@ if("MutationObserver" in window) {
 }
 
 ///
-/// call a function every time the mouse moves
+/// call a function every time the focus shifts
 ///
 function myFocusEventStream() {
 	var self=this;
@@ -313,7 +313,6 @@ function myFocusEventStream() {
 	);
 	
 }
-
 
 ///
 /// composite event stream
@@ -431,7 +430,8 @@ window.myQuerySelectorLive = function(selector, handler) {
 				);
 				
 				// simplify simpleSelector
-				simpleSelector = simpleSelector.replace(/:(focus)\b/gi, ''); // :active has other hooks
+				var reg = /:(focus)\b/gi;
+				simpleSelector = simpleSelector.replace(reg, ''); // :active has other hooks
 				
 			}
 			
@@ -449,14 +449,33 @@ window.myQuerySelectorLive = function(selector, handler) {
 				simpleSelector = simpleSelector.replace(reg, '');
 				
 			}
-			
+
 			// detect the presence of user input pseudo-classes
-			var reg = /:(any-link|link|visited|local-link|target|enabled|disabled|read-only|read-write|checked|indeterminate|valid|invalid|in-range|out-of-range|required|optional|user-error)\b/gi;
+			var reg = /:(target|checked|indeterminate|valid|invalid|in-range|out-of-range|user-error)\b/gi;
 			if(reg.test(simpleSelector)) {
 				
 				// slowly dynamic stuff do happen
 				eventStream = new myCompositeEventStream(
 					new myTimeoutEventStream(250),
+					eventStream
+				);
+				
+				// simplify simpleSelector
+				simpleSelector = simpleSelector.replace(reg, '');
+
+				var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
+				// simplify simpleSelector
+				simpleSelector = simpleSelector.replace(reg, '');
+				
+			}
+			
+			// detect the presence of nearly-static pseudo-classes
+			var reg = /:(any-link|link|visited|local-link|enabled|disabled|read-only|read-write|required|optional)\b/gi;
+			if(reg.test(simpleSelector)) {
+				
+				// nearly static stuff do happen
+				eventStream = new myCompositeEventStream(
+					new myTimeoutEventStream(333),
 					eventStream
 				);
 				
