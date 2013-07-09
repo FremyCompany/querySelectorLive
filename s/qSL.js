@@ -15,6 +15,16 @@
 // - wrap this into a module
 // - look for a few optimizations ideas in gecko/webkit
 // - use arrays in myCompositeEventStream to avoid nested debouncings
+'use strict';
+var setImmediate = window.setImmediate || function(f) {
+    setTimeout(f, 0);
+};
+var requestAnimationFrame = window.requestAnimationFrame || function(f) {
+    return setTimeout(function() {
+        f(+new Date());
+    }, 16);
+};
+var cancelAnimationFrame = window.cancelAnimationFrame || window.clearTimeout;
 
 ///
 /// event stream implementation
@@ -223,7 +233,7 @@ if("MutationObserver" in window) {
 		myEventStream.call(
 			this, 
 			function connect(yieldEvent) { if(config) { observer=new MutationObserver(yieldEvent); observer.observe(target,config); target=null; config=null; } },
-			function disconnect() { observer && observer.disconnect(); observer=null; yieldEvent=null; yieldEventWrapper=null; },
+			function disconnect() { observer && observer.disconnect(); observer=null; },
 			function reconnect() { observer.takeRecords(); }
 		);
 
@@ -302,8 +312,6 @@ function myFocusEventStream() {
 			rid=setTimeout(yieldEventDelayed, 500); // let the document load
 		},
 		function disconnect() { 
-			document.removeEventListener("DOMContentLoaded", yieldEventDelayed, false);
-			window.removeEventListener(pointermove, yieldEventDelayed, true);
 			clearTimeout(rid); yieldEventDelayed=null; yieldEvent=null; rid=0;
 		},
 		function reconnect(newYieldEvent) { 
@@ -343,7 +351,7 @@ function myCompositeEventStream(stream1, stream2) {
 			stream2.dispose();
 		},
 		function reconnect(newYieldEvent) { 
-			yieldEvent=newYieldEvent; scheduled=false;
+			yieldEvent=newYieldEvent;
 			s1 && stream1.schedule(yieldEventWrapper);
 			s2 && stream2.schedule(yieldEventWrapper);
 			s1 = s2 = false;
