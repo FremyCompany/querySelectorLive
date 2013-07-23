@@ -15,7 +15,7 @@
 // - wrap this into a module
 // - look for a few optimizations ideas in gecko/webkit
 // - use arrays in myCompositeEventStream to avoid nested debouncings
-'use strict';
+"use strict";
 
 window.setImmediate = window.setImmediate || function(f) {
     setTimeout(f, 0);
