@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+	<head>
+		<title>querySelectorLive demo</title>
+		<script src="./s/qSL.js"></script>
+		<script>
+			
+			//////////////////////////////////////////////////
+			////              tests of qSL                ////
+			//////////////////////////////////////////////////
+			
+			/*
+			var l = 0; var el=null;
+			var processQueue = function processQueue() {
+			    
+			    for(var i=1000; i; i--) {
+			        
+			        if(!el) { return; }
+			        
+			        if(el.webkitMatchesSelector("h2:hover~p")) {
+			            l++;
+			        }
+                    
+                    if(el.firstElementChild) {
+                        el = el.firstElementChild
+                    } else {
+                        while(el && el.nextElementSibling===null) {
+                            el=el.parentElement
+                        }
+                        el = el?el.nextElementSibling:null
+                    }
+                    
+                }
+                
+                if(el) {
+                    setImmediate(processQueue);
+                }
+                
+			}
+			document.onclick = function() {
+			    el = document.documentElement;
+			    processQueue();
+			}
+			*/
+			
+            
+			var l = 0; var cel=0; var all = [];
+			var processQueue = function processQueue() {
+			    
+			    for(var i=5000; i; i--) {
+			        var el = all[cel++];
+			        if(el) {
+			            if (el.msMatchesSelector("h2:hover~p")) {
+			                l++;
+                        }
+			        } else {
+                        return cel=0;
+                    }
+                }
+                
+                setImmediate(processQueue);
+                
+			}
+			document.onclick = function() {
+			    all = Array.prototype.slice.call(document.getElementsByTagName("*"),0);
+			    processQueue();
+			    //l += document.querySelectorAll("h2:hover~p").length;
+            }
+			
+			/*
+			myQuerySelectorLive("h2:hover~p", {
+				onadded: function(e) {
+					console.log("h2:hover~p added:");
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
+				},
+				onremoved: function(e) {
+					console.log("h2:hover~p removed:");
+					console.log("- "+e.tagName.toLowerCase()+" - "+e.textContent.replace(/(\s|\r|\n)+/g,' ').substr(0,50));
+				}
+			});
+			*/
+			
+		</script>
+	</head>
+	<body>
+		
+		<ul onclick="this.className=this.className?'':'active'">
+			<li><a href="#">First line</a></li>
+			<li><a href="#">Second line</a></li>
+		</ul>
+		
+		<article class="active">
+		
+			<h1>Some title</h1>
+			<p>Paragaph 1.1</p>
+			
+			<h2 oncontextmenu="this.parentNode.removeChild(this); return false;">Some subtitle</h2>
+			<p>Paragraph 2.2</p>
+			<p>Paragraph 2.3</p>
+			
+			<h2>Some subtitle</h2>
+			<p>Paragraph 2.4</p>
+			<p>Paragraph 2.5</p>
+			
+		</article>
+		
+		<article>
+		
+			<h1>Some title</h1>
+			<p>Paragaph 1.6</p>
+			
+			<h2>Some subtitle</h2>
+			<p>Paragraph 2.7</p>
+			<p>Paragraph 2.8</p>
+			
+			<h2>Some subtitle</h2>
+			<p>Paragraph 2.9</p>
+			<p>Paragraph 2.10</p>
+			
+		</article>
+		
+		<article>
+		
+			<h1>Some title</h1>
+			<p>Paragaph 1.11</p>
+			
+			<h2>Some subtitle</h2>
+			<p>Paragraph 2.12</p>
+			<p>Paragraph 2.13</p>
+			
+			<h2>Some subtitle</h2>
+			<p>Paragraph 2.14</p>
+			<p>Paragraph 2.15</p>
+			
+		</article>
+		
+		<article style="display: none">
+		
+			<h1>Some title</h1>
+			<p>Paragaph 1.11</p>
+			
+			<h2>Some subtitle</h2>
+			<p>Paragraph 2.12</p>
+			<p>Paragraph 2.13</p>
+			
+			<h2>Some subtitle</h2>
+			<p>Paragraph 2.14</p>
+			<p>Paragraph 2.15</p>
+			
+		</article>
+		
+		<script>
+		    setTimeout(function() {
+		        
+		        // let's add some more articles
+		        var last = document.querySelector("article:last-of-type");
+		        for(var i=50000; i; i--) {
+		            document.body.appendChild(
+                        last.cloneNode(true)
+                    );
+                }
+                
+                alert("Document ready")
+		        
+		    }, 32)
+		</script>
+		
+	</body>
+</html>

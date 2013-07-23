@@ -16,15 +16,16 @@
 // - look for a few optimizations ideas in gecko/webkit
 // - use arrays in myCompositeEventStream to avoid nested debouncings
 'use strict';
-var setImmediate = window.setImmediate || function(f) {
+
+window.setImmediate = window.setImmediate || function(f) {
     setTimeout(f, 0);
 };
-var requestAnimationFrame = window.requestAnimationFrame || function(f) {
+window.requestAnimationFrame = window.requestAnimationFrame || function(f) {
     return setTimeout(function() {
         f(+new Date());
     }, 16);
 };
-var cancelAnimationFrame = window.cancelAnimationFrame || window.clearTimeout;
+window.cancelAnimationFrame = window.cancelAnimationFrame || window.clearTimeout;
 
 ///
 /// event stream implementation
@@ -369,7 +370,10 @@ function myCompositeEventStream(stream1, stream2) {
 ///
 /// the live querySelectorAll implementation
 ///
-window.myQuerySelectorLive = function(selector, handler) {
+window.myQuerySelectorLive = function(selector, handler, root) {
+    
+    // restrict the selector coverage to some part of the DOM only
+    var root = root || document;
 	
 	// TODO: make use of "mutatedAncestorElement" to update only elements inside the mutated zone
 	
@@ -382,7 +386,7 @@ window.myQuerySelectorLive = function(selector, handler) {
 		// update elements matching the selector
 		var newElms = [];
 		var oldElms = currentElms.slice(0);
-		var temps = document.querySelectorAll(selector);
+		var temps = root.querySelectorAll(selector);
 		for(var i=newElms.length=temps.length; i;) { newElms.push(temps[--i]); }
 		currentElms = newElms.slice(0); temps=null;
 		
@@ -419,12 +423,12 @@ window.myQuerySelectorLive = function(selector, handler) {
 	var eventStream; if(simpleSelector.indexOf(':') == -1) {
 		
 		// static stuff only
-		eventStream = new myDOMUpdateEventStream(); 
+		eventStream = new myDOMUpdateEventStream(root); 
 		
 	} else {
 		
 		// dynamic stuff too
-		eventStream = new myDOMUpdateEventStream(); 
+		eventStream = new myDOMUpdateEventStream(root); 
 		if(myDOMUpdateEventStream != myAnimationFrameEventStream) {
 		
 			// detect the presence of focus-related pseudo-classes
